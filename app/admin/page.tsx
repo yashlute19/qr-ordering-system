@@ -1,219 +1,245 @@
+'use client'
+
 import Link from "next/link";
-import Image from "next/image";
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase";
+import { 
+  BarChart3, 
+  ShoppingBag, 
+  ChefHat, 
+  TrendingUp, 
+  Clock, 
+  Download, 
+  Calendar,
+  LayoutDashboard,
+  Menu as MenuIcon,
+  QrCode,
+  LogOut,
+  Users
+} from "lucide-react";
 
 export default function AdminDashboard() {
+  const [stats, setStats] = useState({
+    revenue: 0,
+    orders: 0,
+    activeOrders: 0,
+    avgWait: 15
+  });
+  const [latestOrders, setLatestOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const supabase = createClient();
+
+  useEffect(() => {
+    async function fetchDashboardData() {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Fetch today's orders for revenue and count
+      const { data: todayOrders } = await supabase
+        .from('orders')
+        .select('*')
+        .gte('created_at', today.toISOString());
+
+      // Fetch all non-served orders
+      const { data: activeOrders } = await supabase
+        .from('orders')
+        .select('*')
+        .neq('status', 'served');
+
+      // Fetch latest 5 orders with table info
+      const { data: recent } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      const revenue = todayOrders?.reduce((acc, curr) => acc + curr.total_amount, 0) || 0;
+      
+      setStats({
+        revenue,
+        orders: todayOrders?.length || 0,
+        activeOrders: activeOrders?.length || 0,
+        avgWait: 12 // Simulated for now
+      });
+      setLatestOrders(recent || []);
+      setLoading(false);
+    }
+
+    fetchDashboardData();
+
+    // Subscribe to changes for live dashboard
+    const channel = supabase
+      .channel('admin-dashboard')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, fetchDashboardData)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   return (
-    <div className="flex-col min-h-screen bg-background-light pt-[56px] md:pt-[57px] flex font-display">
-      <div className="flex h-[calc(100vh-57px)] overflow-hidden">
+    <div className="flex flex-col min-h-screen bg-[#FDFBF9] font-display">
+      <div className="flex h-screen overflow-hidden">
         {/* Sidebar */}
-        <aside className="w-64 bg-white border-r border-primary/10 shrink-0 hidden lg:flex flex-col">
-          <div className="p-6 border-b border-primary/5">
+        <aside className="w-72 bg-white border-r border-stone-100 shrink-0 hidden lg:flex flex-col">
+          <div className="p-8 border-b border-stone-50">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 bg-primary rounded-lg flex items-center justify-center text-white">
-                <span className="material-symbols-outlined">restaurant</span>
+              <div className="bg-primary p-2.5 rounded-2xl text-white">
+                <ChefHat className="w-6 h-6" />
               </div>
               <div>
-                <h1 className="font-serif text-2xl font-bold leading-none text-ink">La Cerise</h1>
-                <p className="text-[10px] uppercase tracking-widest text-primary font-bold">Admin Panel</p>
+                <h1 className="font-serif text-2xl font-bold leading-none text-stone-900">La Cerise</h1>
+                <p className="text-[10px] uppercase tracking-[0.2em] text-primary font-bold mt-1">Management</p>
               </div>
             </div>
           </div>
           
-          <nav className="flex-1 p-4 space-y-1">
-            <Link href="/admin" className="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/10 text-primary font-semibold">
-              <span className="material-symbols-outlined">dashboard</span>
-              <span className="text-sm">Dashboard</span>
-            </Link>
-            <Link href="/admin/orders" className="flex items-center gap-3 px-4 py-3 rounded-lg text-ink/70 hover:bg-primary/5 cursor-pointer">
-              <span className="material-symbols-outlined">shopping_bag</span>
-              <span className="text-sm">Orders</span>
-            </Link>
-            <Link href="/admin/menu" className="flex items-center gap-3 px-4 py-3 rounded-lg text-ink/70 hover:bg-primary/5 cursor-pointer">
-              <span className="material-symbols-outlined">menu_book</span>
-              <span className="text-sm">Menu</span>
-            </Link>
-            <Link href="/admin/qr-codes" className="flex items-center gap-3 px-4 py-3 rounded-lg text-ink/70 hover:bg-primary/5 cursor-pointer">
-              <span className="material-symbols-outlined">qr_code_2</span>
-              <span className="text-sm">QR Codes</span>
-            </Link>
-            <Link href="/admin/kitchen" className="flex items-center gap-3 px-4 py-3 rounded-lg text-ink/70 hover:bg-primary/5 cursor-pointer">
-              <span className="material-symbols-outlined">monitor_heart</span>
-              <span className="text-sm">KDS</span>
-            </Link>
+          <nav className="flex-1 p-6 space-y-2">
+            {[
+              { label: 'Dashboard', icon: LayoutDashboard, href: '/admin', active: true },
+              { label: 'Menu System', icon: MenuIcon, href: '/admin/menu' },
+              { label: 'Order Analytics', icon: BarChart3, href: '/admin/orders' },
+              { label: 'Kitchen View', icon: ChefHat, href: '/admin/kitchen' },
+              { label: 'QR Generators', icon: QrCode, href: '/admin/qr-codes' },
+              { label: 'Staff Management', icon: Users, href: '/admin/staff' },
+            ].map((item) => (
+              <Link 
+                key={item.label}
+                href={item.href} 
+                className={`flex items-center gap-3 px-4 py-4 rounded-2xl transition-all duration-300 ${
+                  item.active 
+                    ? 'bg-primary/10 text-primary shadow-lg shadow-primary/5' 
+                    : 'text-stone-400 hover:text-stone-900 hover:bg-stone-50'
+                }`}
+              >
+                <item.icon className="w-5 h-5" />
+                <span className="text-sm font-bold">{item.label}</span>
+              </Link>
+            ))}
           </nav>
           
-          <div className="p-4 border-t border-primary/10">
-            <div className="flex items-center gap-3 px-2">
-              <div className="h-10 w-10 rounded-full bg-cover bg-center border-2 border-primary/20" style={{backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuDr14X3kCUrxkbo-FoRRqPZlaNF6UTxtoW1u7g8eyJAXN1MP__9LulGmUsyJlKf9fv6wL642YaAcOZ4-GtT2MjNYrHQjgwsgCHrYQKkg_KPa1ufrqb5wFtxzsu0i9hJI8oFGlLBiRKtS_aIP59Y-ij_5eGQgt2mTUSm0SyW-y4NT1TicZkZHzwpTVU0WUIURsnB7flR4Qfz44qXeKF1USgNNgubE2bmQLx_o86iUly_aJSvsJ6ZaHbi-bAoA2Q4iL4hQCMW6X3Yd-WH')"}}></div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold truncate text-ink">Julian Casablancas</p>
-                <p className="text-xs text-ink/60">Head Manager</p>
-              </div>
-            </div>
+          <div className="p-6 border-t border-stone-50">
+            <button className="w-full flex items-center justify-between px-4 py-4 rounded-2xl text-red-500 hover:bg-red-50 transition-all font-bold text-sm">
+              <span>Sign Out</span>
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </aside>
         
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto p-6 lg:p-8">
-          <header className="flex justify-between items-end mb-8">
+        <main className="flex-1 overflow-y-auto bg-[#FDFBF9] p-8 lg:p-12">
+          <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
             <div>
-              <h2 className="font-serif text-4xl lg:text-5xl font-bold text-ink mb-1">Dashboard Overview</h2>
-              <p className="text-ink/60">Real-time performance metrics for today</p>
+              <p className="text-[10px] uppercase tracking-[0.3em] text-primary font-bold mb-2">Operational Analytics</p>
+              <h2 className="font-serif text-4xl lg:text-5xl font-bold text-stone-900">Live Dashboard</h2>
             </div>
             <div className="flex gap-3">
-              <button className="px-4 py-2 bg-white border border-primary/10 rounded-lg text-sm font-medium flex items-center gap-2">
-                <span className="material-symbols-outlined text-sm">calendar_today</span>
-                Oct 24, 2023
-              </button>
-              <button className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium flex items-center gap-2 shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors">
-                <span className="material-symbols-outlined text-sm">download</span>
-                Export Report
+              <div className="flex items-center gap-2 px-5 py-3 bg-white border border-stone-100 rounded-2xl text-sm font-bold text-stone-600 shadow-sm">
+                <Calendar className="w-4 h-4 text-primary" />
+                {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </div>
+              <button className="flex items-center gap-2 px-6 py-3 bg-stone-900 text-white rounded-2xl text-sm font-bold shadow-xl shadow-stone-900/10 hover:scale-105 transition-all">
+                <Download className="w-4 h-4" />
+                Export
               </button>
             </div>
           </header>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white p-6 rounded-xl border border-primary/10 shadow-sm relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-full transition-all group-hover:scale-110"></div>
-              <p className="text-sm font-medium text-ink/60 uppercase tracking-wider">Today's Revenue</p>
-              <div className="flex items-baseline gap-2 mt-2">
-                <h3 className="text-4xl font-bold text-ink">$1,240</h3>
-                <span className="text-green-600 text-sm font-bold flex items-center">
-                  <span className="material-symbols-outlined text-xs">arrow_upward</span>12.5%
-                </span>
+          {/* Real Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8 mb-12">
+            {[
+              { label: 'Daily Revenue', value: `$${stats.revenue.toFixed(2)}`, trend: '+12%', icon: BarChart3, color: 'text-green-600' },
+              { label: 'Today\'s Orders', value: stats.orders, trend: '+5%', icon: ShoppingBag, color: 'text-primary' },
+              { label: 'Active Sessions', value: stats.activeOrders, trend: 'Live', icon: TrendingUp, color: 'text-amber-500' },
+              { label: 'Average Prep', value: `${stats.avgWait}m`, trend: 'Target', icon: Clock, color: 'text-stone-600' },
+            ].map((stat, i) => (
+              <div key={i} className="bg-white p-7 rounded-[2rem] border border-stone-100 shadow-xl shadow-stone-200/40 relative overflow-hidden group">
+                <div className="relative z-10">
+                  <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-4">{stat.label}</p>
+                  <div className="flex items-baseline justify-between">
+                    <h3 className="text-3xl font-serif font-bold text-stone-900">{stat.value}</h3>
+                    <span className={`text-xs font-bold px-2 py-1 rounded-lg bg-stone-50 ${stat.color}`}>
+                      {stat.trend}
+                    </span>
+                  </div>
+                </div>
+                <stat.icon className="absolute -bottom-4 -right-4 w-24 h-24 text-stone-100/50 group-hover:scale-110 transition-transform duration-500" />
               </div>
-              <p className="text-xs text-ink/40 mt-4">Compared to $1,102 yesterday</p>
-            </div>
-            
-            <div className="bg-white p-6 rounded-xl border border-primary/10 shadow-sm relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-full transition-all group-hover:scale-110"></div>
-              <p className="text-sm font-medium text-ink/60 uppercase tracking-wider">Active Orders</p>
-              <div className="flex items-baseline gap-2 mt-2">
-                <h3 className="text-4xl font-bold text-ink">8</h3>
-                <span className="text-primary text-sm font-bold flex items-center">
-                  <span className="material-symbols-outlined text-xs">arrow_upward</span>3%
-                </span>
-              </div>
-              <p className="text-xs text-ink/40 mt-4">4 orders in preparation</p>
-            </div>
-            
-            <div className="bg-white p-6 rounded-xl border border-primary/10 shadow-sm relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-full transition-all group-hover:scale-110"></div>
-              <p className="text-sm font-medium text-ink/60 uppercase tracking-wider">Kitchen Status</p>
-              <div className="flex items-baseline gap-2 mt-2">
-                <h3 className="text-4xl font-bold text-ink">14m</h3>
-                <span className="text-ink/60 text-sm font-medium">avg wait</span>
-              </div>
-              <p className="text-xs text-ink/40 mt-4">Within target threshold</p>
-            </div>
+            ))}
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 bg-white rounded-xl border border-primary/10 shadow-sm overflow-hidden flex flex-col">
-              <div className="p-6 border-b border-primary/10 flex justify-between items-center">
-                <h4 className="font-serif text-2xl font-bold text-ink">Latest Orders</h4>
-                <Link href="/admin/orders" className="text-primary text-sm font-bold hover:underline">View All</Link>
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
+            {/* Recent Orders Table */}
+            <div className="xl:col-span-2 bg-white rounded-[2.5rem] border border-stone-100 shadow-xl shadow-stone-200/40 overflow-hidden flex flex-col">
+              <div className="p-8 border-b border-stone-50 flex justify-between items-center">
+                <h4 className="font-serif text-2xl font-bold text-stone-900">Recent Transactions</h4>
+                <Link href="/admin/kitchen" className="text-primary text-sm font-bold hover:underline">Kitchen Queue</Link>
               </div>
-              <div className="overflow-x-auto flex-1">
+              <div className="overflow-x-auto">
                 <table className="w-full text-left">
-                  <thead className="bg-primary/5 text-ink/60 text-xs uppercase tracking-wider">
+                  <thead className="bg-stone-50 text-stone-400 text-[10px] uppercase font-bold tracking-widest">
                     <tr>
-                      <th className="px-6 py-4 font-semibold">Order ID</th>
-                      <th className="px-6 py-4 font-semibold">Table #</th>
-                      <th className="px-6 py-4 font-semibold">Total</th>
-                      <th className="px-6 py-4 font-semibold">Status</th>
-                      <th className="px-6 py-4 font-semibold">Action</th>
+                      <th className="px-8 py-5">Order ID</th>
+                      <th className="px-8 py-5">Table</th>
+                      <th className="px-8 py-5">Value</th>
+                      <th className="px-8 py-5">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-primary/5">
-                    <tr className="hover:bg-primary/[0.02]">
-                      <td className="px-6 py-4 font-bold text-ink">#8842</td>
-                      <td className="px-6 py-4">Table 12</td>
-                      <td className="px-6 py-4 font-bold">$84.50</td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary text-white">Preparing</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <button className="material-symbols-outlined text-ink/40 hover:text-primary">more_horiz</button>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-primary/[0.02]">
-                      <td className="px-6 py-4 font-bold text-ink">#8841</td>
-                      <td className="px-6 py-4">Table 05</td>
-                      <td className="px-6 py-4 font-bold">$126.20</td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">Received</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <button className="material-symbols-outlined text-ink/40 hover:text-primary">more_horiz</button>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-primary/[0.02]">
-                      <td className="px-6 py-4 font-bold text-ink">#8840</td>
-                      <td className="px-6 py-4">Takeaway</td>
-                      <td className="px-6 py-4 font-bold">$42.00</td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary text-white">Preparing</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <button className="material-symbols-outlined text-ink/40 hover:text-primary">more_horiz</button>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-primary/[0.02]">
-                      <td className="px-6 py-4 font-bold text-ink">#8839</td>
-                      <td className="px-6 py-4">Table 02</td>
-                      <td className="px-6 py-4 font-bold">$215.00</td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">Received</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <button className="material-symbols-outlined text-ink/40 hover:text-primary">more_horiz</button>
-                      </td>
-                    </tr>
+                  <tbody className="divide-y divide-stone-50">
+                    {latestOrders.map((order) => (
+                      <tr key={order.id} className="hover:bg-stone-50/50 transition-colors group">
+                        <td className="px-8 py-6 font-bold text-stone-900 text-sm">#{order.id.slice(0, 5).toUpperCase()}</td>
+                        <td className="px-8 py-6 font-medium text-stone-500 text-sm">Table {order.table_number}</td>
+                        <td className="px-8 py-6 font-serif font-bold text-stone-900">${order.total_amount.toFixed(2)}</td>
+                        <td className="px-8 py-6">
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                            order.status === 'served' ? 'bg-green-100 text-green-600' : 'bg-primary/10 text-primary'
+                          }`}>
+                            {order.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
             </div>
             
-            <div className="bg-white p-6 rounded-xl border border-primary/10 shadow-sm flex flex-col">
-              <h4 className="font-serif text-2xl font-bold text-ink mb-6">Popular Items</h4>
-              <div className="space-y-6 flex-1">
-                <div className="flex items-center gap-4">
-                  <div className="h-16 w-16 rounded-lg bg-cover bg-center shrink-0 border border-primary/5" style={{backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuDkiC2ImuctiCdlVNC7w17ZhVmTN_44XAzDpTPmUIwYgtKKcXLRygA5_hdQ8rack4aCsdcK7J6YPUEYYMRqOCwjgjT4Hz6Rg3X_Pa8Id-H_CBinUNZ7zzpzsUYiWtNVWpMUL9aX3wTIgJ-CxnitkMZFqF6TAyEMxbGXFffVHly3JCWYRbf1yEhFXCXxRfN7nJps7k6zLmb7YgVZqk3IcidAaWmNL0r2qM56b0RTRu2XrU-n49cQ-DbNIrDY8_Jg6Nz1LqXjdho6x2YV')"}}></div>
-                  <div className="flex-1">
-                    <p className="text-sm font-bold text-ink">Truffle Pasta</p>
-                    <p className="text-xs text-ink/60">42 orders today</p>
-                    <div className="w-full bg-primary/10 h-1 rounded-full mt-2">
-                      <div className="bg-primary h-full rounded-full" style={{width: "85%"}}></div>
-                    </div>
-                  </div>
+            {/* Quick Actions / Marketing */}
+            <div className="space-y-8">
+              <div className="bg-stone-900 p-8 rounded-[2.5rem] text-white relative overflow-hidden shadow-2xl shadow-stone-900/40">
+                <div className="relative z-10">
+                  <h4 className="font-serif text-2xl font-bold mb-2">QR Growth</h4>
+                  <p className="text-stone-400 text-sm mb-6 font-medium">Generate new table codes to expand your dining area capacity.</p>
+                  <Link href="/admin/qr-codes" className="inline-flex items-center gap-2 px-6 py-3 bg-white text-stone-900 rounded-2xl font-bold text-sm hover:scale-105 transition-all">
+                    <QrCode className="w-4 h-4" />
+                    Generate Codes
+                  </Link>
                 </div>
-                
-                <div className="flex items-center gap-4">
-                  <div className="h-16 w-16 rounded-lg bg-cover bg-center shrink-0 border border-primary/5" style={{backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuDt8_KJnJHK29QikMfYLe_giATCv3w98T6QAV2D5Mdk8-Y4Am2YrvmePY-IgSmFeVLsSwydmQGFRR9Qvak2XWWTF_ZaG5MrNKzFBOnqv3kxm3FsBD7MEW162NGX4QStYjk4NQg-KDJ_VrSJWeXEXlUa15QAYO8u2ySbEHNTMU64j6NfunfwAXIx2rkUnY3vPZUBcv57V-JGNur4PXZR4wyxImCFo5aJxUl-kC2YEPtahXrEaUT-WegNqpQgkzeyyDZQ4YgBlBgglfod')"}}></div>
-                  <div className="flex-1">
-                    <p className="text-sm font-bold text-ink">Margherita Pizza</p>
-                    <p className="text-xs text-ink/60">38 orders today</p>
-                    <div className="w-full bg-primary/10 h-1 rounded-full mt-2">
-                      <div className="bg-primary h-full rounded-full" style={{width: "76%"}}></div>
+                <QrCode className="absolute -bottom-10 -right-10 w-48 h-48 opacity-10 rotate-12" />
+              </div>
+              
+              <div className="bg-white p-8 rounded-[2.5rem] border border-stone-100 shadow-xl shadow-stone-200/40">
+                <h4 className="font-serif text-xl font-bold text-stone-900 mb-6">Staff Performance</h4>
+                <div className="space-y-6">
+                  {[
+                    { name: 'Kitchen Station', value: 85, color: 'bg-primary' },
+                    { name: 'Service Speed', value: 92, color: 'bg-green-500' },
+                    { name: 'Table Turnover', value: 64, color: 'bg-amber-500' },
+                  ].map((metric) => (
+                    <div key={metric.name}>
+                      <div className="flex justify-between text-xs font-bold uppercase tracking-widest text-stone-400 mb-2">
+                        <span>{metric.name}</span>
+                        <span>{metric.value}%</span>
+                      </div>
+                      <div className="w-full bg-stone-100 h-2 rounded-full overflow-hidden">
+                        <div className={`${metric.color} h-full transition-all duration-1000`} style={{ width: `${metric.value}%` }}></div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-4">
-                  <div className="h-16 w-16 rounded-lg bg-cover bg-center shrink-0 border border-primary/5" style={{backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuCoev5GXgN5zA9CiOaYjjG5mIVCKX_G99rmLDgpAd-HmIhAdh7ljgxhPVrnDA1hNdRBjnAVVnAiZ830mhflUjN8AmzKm6nPvTh9FmTOUe-s7Q6JMqXbFoJzTsmS6D9A-o4Zjuv5fVwRaVeKbs1gqlMxBslVEE86s3iK_bF2jpJLTPMmu0lo5wdIEIQgIPKzXml3xWhFx9-_nQ-IT7i6uF4jz97jJhiM0m-gAhl-JgEvQ9DCGX_L6Lh29XTD6IkU4rzTtVc2a77rliYV')"}}></div>
-                  <div className="flex-1">
-                    <p className="text-sm font-bold text-ink">Classic Burger</p>
-                    <p className="text-xs text-ink/60">31 orders today</p>
-                    <div className="w-full bg-primary/10 h-1 rounded-full mt-2">
-                      <div className="bg-primary h-full rounded-full" style={{width: "62%"}}></div>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
-              <Link href="/admin/menu" className="w-full mt-8 py-3 text-sm font-bold border border-primary/20 text-primary rounded-lg hover:bg-primary/5 transition-colors text-center inline-block">
-                Full Menu Analytics
-              </Link>
             </div>
           </div>
         </main>
