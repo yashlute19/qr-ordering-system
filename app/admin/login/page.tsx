@@ -1,61 +1,117 @@
+'use client'
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase';
 import Link from "next/link";
+import { Lock, Mail, ChevronRight, ChefHat, AlertCircle } from 'lucide-react';
 
 export default function AdminLogin() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const supabase = createClient();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (authError) {
+      setError(authError.message);
+      setLoading(false);
+    } else {
+      router.push('/admin');
+    }
+  };
+
   return (
-    <div className="flex-col min-h-screen bg-[#fdfaf3] pt-[56px] md:pt-[57px] flex font-display">
-      <main className="flex-1 flex items-center justify-center p-6 sm:p-12">
-        <div className="w-full max-w-[460px] flex flex-col gap-8">
-          <div className="text-center space-y-2">
-            <h1 className="font-serif text-4xl md:text-5xl font-bold text-primary tracking-tight">Cherry & Cream Admin</h1>
-            <p className="text-slate-500 text-base font-medium">Secure Portal Access</p>
+    <div className="flex-col min-h-screen bg-[#FDFBF9] flex font-display text-stone-900">
+      <main className="flex-1 flex items-center justify-center p-6 sm:p-12 relative overflow-hidden">
+        {/* Abstract Background Elements */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -mr-48 -mt-48"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-stone-900/5 rounded-full blur-3xl -ml-48 -mb-48"></div>
+
+        <div className="w-full max-w-[460px] flex flex-col gap-10 relative z-10">
+          <div className="text-center space-y-4">
+            <div className="inline-flex items-center gap-3 bg-white px-6 py-3 rounded-2xl shadow-xl shadow-stone-200/50 border border-stone-100">
+              <div className="bg-primary p-2 rounded-xl text-white">
+                <ChefHat className="w-5 h-5" />
+              </div>
+              <span className="font-serif text-xl font-bold tracking-tight">Cherry & Cream</span>
+            </div>
+            <h1 className="text-4xl font-serif font-bold text-stone-900 mt-4">Management Portal</h1>
+            <p className="text-stone-400 font-medium uppercase tracking-widest text-[10px]">Authorized Personnel Only</p>
           </div>
           
-          <div className="bg-white rounded-xl shadow-[0_20px_50px_rgba(153,0,3,0.08)] border border-primary/5 cursor-default overflow-hidden">
-            <div className="h-32 w-full bg-cover bg-center" style={{backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuDhINQeLDwKbHFrMazbGt912U_mM07nhM7alslUBLi8GBIMIpelMudyK2QP-fRyU5Eh6EV72g6YqUGy4QqKT2PVmGeecYksQSfnOM9LWQ_-K9SvKKii-qI-LgEZtSqTZRKW7z-7yZpNLH0xXfqsfr2TlXqhiiVqVpJ32qdGo2F0BArNRJAe4cr8-HCCdgaggbIysDP2Ab-0du69xKdZJoyFDZe_KqPj7kZoxkhNvckW2YBpNBIUyT_q6xb9vXzLu1M1fHkmbZ_yf-6n')"}}>
-              <div className="w-full h-full bg-primary/20 backdrop-brightness-75"></div>
-            </div>
-            
-            <div className="p-8 md:p-10 space-y-6">
-              <div className="space-y-1">
-                <h2 className="text-2xl font-bold text-slate-900">Admin Login</h2>
-                <p className="text-slate-500 text-sm">Enter your administrative credentials</p>
+          <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-stone-200/60 border border-stone-50 overflow-hidden">
+            <div className="p-10 md:p-12 space-y-8">
+              <div className="space-y-2">
+                <h2 className="text-2xl font-bold text-stone-900">Login</h2>
+                <p className="text-stone-400 text-sm font-medium">Use your work credentials to continue</p>
               </div>
+
+              {error && (
+                <div className="bg-red-50 border border-red-100 p-4 rounded-2xl flex items-center gap-3 text-red-600 text-sm font-bold animate-in fade-in slide-in-from-top-2">
+                  <AlertCircle className="w-5 h-5" />
+                  {error}
+                </div>
+              )}
               
-              <div className="space-y-5">
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700 ml-1">Username</label>
+              <form onSubmit={handleLogin} className="space-y-6">
+                <div className="space-y-3">
+                  <label className="text-xs font-bold text-stone-400 uppercase tracking-widest ml-1">Work Email</label>
                   <div className="relative">
-                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xl">person</span>
-                    <input className="w-full pl-12 pr-4 py-4 rounded-lg border border-slate-200 bg-slate-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400" placeholder="j.smith@cherrycream.com" type="text" />
+                    <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-stone-300 w-5 h-5" />
+                    <input 
+                      required
+                      type="email" 
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full pl-14 pr-6 py-5 rounded-[1.25rem] border border-stone-100 bg-stone-50/50 text-stone-900 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:bg-white transition-all font-bold placeholder:text-stone-300" 
+                      placeholder="manager@cherrycream.com" 
+                    />
                   </div>
                 </div>
                 
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center px-1">
-                    <label className="text-sm font-semibold text-slate-700">Password</label>
-                    <Link href="#" className="text-xs font-bold text-primary hover:underline">Forgot password?</Link>
-                  </div>
+                <div className="space-y-3">
+                  <label className="text-xs font-bold text-stone-400 uppercase tracking-widest ml-1">Security Key</label>
                   <div className="relative">
-                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xl">lock</span>
-                    <input className="w-full pl-12 pr-4 py-4 rounded-lg border border-slate-200 bg-slate-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400" placeholder="••••••••••••" type="password" />
+                    <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-stone-300 w-5 h-5" />
+                    <input 
+                      required
+                      type="password" 
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full pl-14 pr-6 py-5 rounded-[1.25rem] border border-stone-100 bg-stone-50/50 text-stone-900 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:bg-white transition-all font-bold placeholder:text-stone-300" 
+                      placeholder="••••••••••••" 
+                    />
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-3 px-1">
-                  <input className="rounded border-slate-300 text-primary focus:ring-primary/30 size-4 accent-primary" type="checkbox" />
-                  <label className="text-sm text-slate-600 cursor-pointer">Remember this device for 30 days</label>
-                </div>
-                
-                <Link href="/admin" className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 mt-4">
-                  <span>Access Dashboard</span>
-                  <span className="material-symbols-outlined text-lg">arrow_forward</span>
-                </Link>
-              </div>
+                <button 
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-stone-900 hover:bg-stone-800 text-white font-bold py-5 rounded-[1.25rem] shadow-xl shadow-stone-900/10 transition-all flex items-center justify-center gap-3 mt-10 disabled:opacity-50 group"
+                >
+                  <span>{loading ? 'Verifying...' : 'Unlock Dashboard'}</span>
+                  {!loading && <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
+                </button>
+              </form>
             </div>
           </div>
           
-          <div className="text-center text-slate-400 text-xs font-medium uppercase tracking-widest">
-            Authorized Personnel Only • System ID: CC-772
+          <div className="text-center">
+            <p className="text-stone-300 text-[10px] font-bold uppercase tracking-widest">
+              Secured by Supabase Guard • CC-772
+            </p>
           </div>
         </div>
       </main>

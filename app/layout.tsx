@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Cormorant_Garamond, Lora } from "next/font/google";
 import "./globals.css";
 
+import { CartProvider } from "@/context/CartContext";
+
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta-sans",
   subsets: ["latin"],
@@ -43,7 +45,9 @@ export default function RootLayout({
       <body
         className={`${plusJakartaSans.variable} ${cormorantGaramond.variable} ${lora.variable} font-display antialiased bg-background-light min-h-screen text-ink`}
       >
-        {children}
+        <CartProvider>
+          {children}
+        </CartProvider>
       </body>
     </html>
   );
