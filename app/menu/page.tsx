@@ -1,7 +1,7 @@
 'use client'
 
 import Link from "next/link";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { Search, ShoppingBag, Home, Plus, ChevronRight, Utensils } from "lucide-react";
@@ -23,7 +23,7 @@ const FALLBACK_MENU_ITEMS = [
   { id: '4', name: 'Avocado Toast', description: 'Toasted sourdough with chili flakes and radish', price: 12.00, category_id: 'snacks', image_url: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?q=80&w=500&auto=format&fit=crop' },
 ];
 
-export default function MobileMenu() {
+function MenuContent() {
   const searchParams = useSearchParams();
   const table = searchParams.get('table');
   const { addToCart, totalItems } = useCart();
@@ -174,5 +174,17 @@ export default function MobileMenu() {
         </div>
       </nav>
     </div>
+  );
+}
+
+export default function MobileMenu() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    }>
+      <MenuContent />
+    </Suspense>
   );
 }

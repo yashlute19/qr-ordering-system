@@ -55,4 +55,4 @@ Ensure your Supabase project has the following tables:
 - **Password**: `CherryAdmin2024!`
 
 ---
-Developed for **Cherry & Cream Group** — Redefining Digital Dining.
+Developed for **Aryan Seth** — Redefining Digital Dining.

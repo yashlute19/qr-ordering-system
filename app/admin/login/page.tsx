@@ -76,7 +76,7 @@ export default function AdminLogin() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="w-full pl-14 pr-6 py-5 rounded-[1.25rem] border border-stone-100 bg-stone-50/50 text-stone-900 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:bg-white transition-all font-bold placeholder:text-stone-300" 
-                      placeholder="manager@cherrycream.com" 
+                      placeholder="admin@05rpm.com" 
                     />
                   </div>
                 </div>
@@ -91,7 +91,7 @@ export default function AdminLogin() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="w-full pl-14 pr-6 py-5 rounded-[1.25rem] border border-stone-100 bg-stone-50/50 text-stone-900 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:bg-white transition-all font-bold placeholder:text-stone-300" 
-                      placeholder="••••••••••••" 
+                      placeholder="05rpm@pass" 
                     />
                   </div>
                 </div>

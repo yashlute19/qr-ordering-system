@@ -44,6 +44,7 @@ export default function RootLayout({
       </head>
       <body
         className={`${plusJakartaSans.variable} ${cormorantGaramond.variable} ${lora.variable} font-display antialiased bg-background-light min-h-screen text-ink`}
+        suppressHydrationWarning
       >
         <CartProvider>
           {children}
