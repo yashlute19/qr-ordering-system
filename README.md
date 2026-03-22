@@ -50,9 +50,9 @@ Ensure your Supabase project has the following tables:
 - `order_items`
 - `profiles` (for admin staff)
 
-## 🔐 Demo Credentials
+<!-- ## 🔐 Demo Credentials
 - **Admin Email**: `manager@cherrycream.com`
-- **Password**: `CherryAdmin2024!`
+- **Password**: `CherryAdmin2024!` -->
 
 ---
 Developed for **Aryan Seth** — Redefining Digital Dining.
