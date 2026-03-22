@@ -73,7 +73,7 @@ export default function LandingPage() {
         </section>
 
         {/* Feature Grid */}
-        <section className="px-6 py-20 bg-white">
+        {/* <section className="px-6 py-20 bg-white">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-20">
               <h2 className="font-serif text-4xl md:text-5xl font-bold text-stone-900 mb-4">Unified Ecosystem</h2>
@@ -140,7 +140,7 @@ export default function LandingPage() {
               ))}
             </div>
           </div>
-        </section>
+        </section> */}
 
         {/* Closing */}
         <section className="px-6 py-32 text-center bg-stone-900 relative overflow-hidden">
